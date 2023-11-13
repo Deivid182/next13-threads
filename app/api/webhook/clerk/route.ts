@@ -33,7 +33,7 @@ type Event = {
   type: EventType;
 };
 
-export async function POST (request: Request) {
+export async function POST (request: Request): Promise<Response> {
   const payload = await request.json();
   const header = headers();
 
@@ -204,4 +204,6 @@ export async function POST (request: Request) {
       );
     }
   }
+
+  return Response.json({ message: "Event type not handled" }, { status: 400 });
 };
