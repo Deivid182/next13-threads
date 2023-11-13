@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { connectDB } from '../db'
-import User from '../models/user.model'
 import Thread from '../models/thread.model'
+import User from '../models/user.model'
 
 interface UpdateUserProps {
   userId: string
@@ -15,8 +15,10 @@ interface UpdateUserProps {
 }
 
 export async function updateUser({userId, username, name, bio, image, path}: UpdateUserProps): Promise<void> {
+
   
   try {
+
     connectDB()
     await User.findOneAndUpdate({id: userId}, {
       username,
@@ -77,4 +79,33 @@ export async function getUserPosts(userId: string) {
     console.log(error)
     throw new Error(`Failed to fetch user posts: ${error.message}`)
   }
+}
+
+export async function getActivity(userId: string) {
+  try {
+    connectDB()
+    const userThreads = await Thread.find({ user: userId })
+
+    const childThreadsIds = userThreads.reduce((acc, userThread) => {
+      return acc.concat(userThread.children)
+    }, [])
+
+    const replies = await Thread.find({
+      _id: {
+        $in: childThreadsIds
+      },
+      user: {
+        $ne: userId
+      }
+    }).populate({
+      path: 'user',
+      model: User,
+      select: "id name image"
+    })
+    return replies;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(`Failed to fetch user activity: ${error.message}`)
+  }
+
 }
